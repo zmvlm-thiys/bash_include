@@ -45,7 +45,7 @@ force_include()
 	esac
 
 	# convert path for easy parsing
-	include_path="${BASH_INCLUDE_PATH}"
+	include_path="${BASH_INCLUDE_PATH:-/usr/lib/bash:/usr/local/lib/bash}"
 	include_path="${include_path//-/-+}"
 	include_path="${include_path//\\\\/-b}"
 	include_path="${include_path//\\:/-d}"
