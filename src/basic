@@ -1,0 +1,71 @@
+#!/bin/bash
+# include-basics(basic) 1.0.0rc1: basics for scripts and includes
+# functions:
+#   script_begin: sets up enviroment for scripts
+#   script_end: calls main()
+#   module_begin: sets up enviroment for modules
+#   module_end: executes given commandline, if the module is not included.
+SCRIPT_NAME="basic"           # fixed name string for the script.
+SCRIPT_PACKAGE="bash include" # if script is part of a collection, name of the collection
+SCRIPT_VERSION="1.0.0rc1"     # version string of the script.
+# SCRIPT_PREFIX="basic"         # prefix for module related functions and variables/consants
+
+# script_begin: sets up enviroment for scripts
+script_begin()
+{
+	# right now script_begin does nothing except setting progname
+	# program_name="$(basename "${0}")"
+	case "${SCRIPT_NAME}" in
+		*'{'*'}'*)
+			local bname name
+			bname="$(basename "${0}")"
+			program_name=""
+			eval "
+				for name in ${SCRIPT_NAME}; do
+					program_name=\"\${program_name:-\${name}}\"
+					if [ \"X${bname}X\" = \"X\${name}X\" ]; then
+						program_name=\"\${name}\"
+						break
+					fi
+				done
+			"
+		;;
+		"")
+			program_name="$(basename "${0}")"
+		;;
+		*)
+			program_name="${SCRIPT_NAME}"
+		;;
+	esac
+}
+
+# script_end: calls main()
+script_end()
+{
+	# apart from looking nice the use of main() makes it possible to use local variables
+	main "${@}"
+}
+
+# module_begin: sets up enviroment for modules
+module_begin()
+{
+	# is not included?
+	if [ "${BASH_INCLUDE_INCLUDING}" != "true" ]; then
+		# init like a script
+		script_begin "${@}"
+	fi
+}
+
+# module_end: executes given commandline, if the module is not included.
+module_end()
+{
+	# is not included?
+	if [ "${BASH_INCLUDE_INCLUDING}" != "true" ]; then
+		# execute given commanline.
+		eval "${@}"
+		return
+	fi
+	
+	# for returning success to the including script.
+	return 0
+}

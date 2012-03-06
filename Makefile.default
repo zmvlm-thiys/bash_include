@@ -1,0 +1,22 @@
+version=0.1
+name=bash_include-$(version)
+buildroot=/tmp/build/$(name)
+all:
+	rm -fr $(buildroot) 
+	ls $(buildroot) || git clone . $(buildroot)
+	cd $(buildroot) && git pull
+	cd $(buildroot) && rm -r .git
+	cd $(buildroot) && rm -r gentoo
+	cd $(buildroot) && aclocal
+	cd $(buildroot) && autoconf -i
+	cd $(buildroot) && automake --add-missing
+	cd $(buildroot) && autoreconf
+	cd $(buildroot) && cd .. && tar cjf $(name).tar.bz2 $(name)
+	cd $(buildroot) && ./configure --prefix $(buildroot)/test
+	cd $(buildroot) && make install
+	$(MAKE) -f Makefile.default ebuild
+
+ebuild:
+	cp $(buildroot).tar.bz2 gentoo/bash_include/distfiles
+	cd gentoo/bash_include/dev-lang/bash_include/ && rm Manifest || echo 1
+	cd gentoo/bash_include/dev-lang/bash_include/ && ebuild *.ebuild digest

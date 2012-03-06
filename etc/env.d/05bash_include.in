@@ -1,0 +1,1 @@
+BASH_INCLUDE_PATH="@libdir@/bash_include"

@@ -1,0 +1,40 @@
+#!/bin/bash
+# regex-tools(regex): functions for regexp handling.
+# functions:
+#   regex_deregex: gibt die regulaere expression, die dem string aus $1 entspricht auf stdout aus.
+#                    das erste zeichen aus $2 wird als delimiter eingesetzt.
+#                    ist $2 leer/nicht uebergeben, wird "/" als delimiter eingesetzt.
+SCRIPT_NAME="regex-tools"
+SCRIPT_VERSION="1.0.0rc1"
+SCRIPT_PACKAGE="string-libs"
+SCRIPT_PREFIX="regex"
+
+. bash_include  # load include function
+include basic
+
+module_begin "${@}"
+
+# global variables and constants:
+
+# regex_deregex: gibt die regulaere expression, die dem string aus $1 entspricht auf stdout aus.
+# das erste zeichen aus $2 wird als delimiter eingesetzt.
+# ist $2 leer/nicht uebergeben, wird "/" als delimiter eingesetzt.
+regex_deregex()
+{
+	local delim # variable fuer den delimiter der regulaeren expression.
+	
+	# wurde $2 (mit inhalt) uebergeben?
+	if [ -n "${2}" ]; then
+		# ja, setzen wir delim gleich dem ersten zeichen aus $2.
+		delim="${2:0:1}"
+	# $2 wurde nicht uebergeben (oder ist leer).
+	else
+		# setzen wir "/" als standard.
+		delim="/"
+	fi
+	
+	# geben wir den string aus $1 aus und ersetzen alle zeichen besonderer bedeutung durch die entsprechende "\"-sequenz.
+	printf "%s\n" "${1}" | sed 's|[][\.*^$'"${delim}"']|\\&|g'
+}
+
+module_end "${@}" # checks if is running stand alone, or as included module.

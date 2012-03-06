@@ -1,0 +1,30 @@
+ACLOCAL_AMFLAGS=-I autotools/m4
+
+dist_DATA_IN=
+dist_SCRIPTS_IN=
+
+dist_entry_SCRIPTS=
+dist_entry_SCRIPTS_IN=
+dist_entry_DATA=
+dist_entry_DATA_IN=
+
+dist_libentry_SCRIPTS=
+
+dist_etcenvd_DATA=
+dist_etcenvd_DATA_IN=
+
+dist_noinst_DATA=
+dist_noinst_SCRIPTS=
+dist_noinst_HEADERS=
+nodist_noinst_HEADERS=
+
+MOSTLYCLEANFILES=
+CLEANFILES=
+DISTCLEANFILES=
+
+CXXFLAGS_shared=-shared
+CXXFLAGS_module=$(CXXFLAGS_shared)
+LDFLAGS_shared=-release $(PACKAGE_VERSION) -shared -no-undefined
+LDFLAGS_module=$(LDFLAGS_shared) -module
+
+include autotools/ax_transform.am

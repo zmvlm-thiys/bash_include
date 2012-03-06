@@ -1,0 +1,10 @@
+ax__transform=$(DATA_IN) $(SCRIPTS_IN) $(SOURCES_IN) $(HEADERS_IN) $(dist_DATA_IN) $(dist_SCRIPTS_IN) $(dist_SOURCES_IN) $(dist_HEADERS_IN) $(nodist_DATA_IN) $(nodist_SCRIPTS_IN) $(nodist_SOURCES_IN) $(nodist_HEADERS_IN)
+
+%: %.in $(builddir)/config.transform
+	@ MAKEFLAGS= $(builddir)/config.transform '$@' 'VPATH=$(VPATH)'
+
+CLEANFILES+=$(ax__transform:.in=)
+DISTCLEANFILES+=$(builddir)/config.transform
+dist_noinst_DATA+=$(DATA_IN) $(SOURCES_IN) $(dist_DATA_IN) $(dist_SOURCES_IN)
+dist_noinst_HEADERS+=$(HEADERS_IN) $(dist_HEADERS_IN)
+dist_noinst_SCRIPTS+=$(SCRIPTS_IN) $(dist_SCRIPTS_IN)

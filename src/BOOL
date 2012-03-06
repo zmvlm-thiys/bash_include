@@ -1,0 +1,68 @@
+#!/bin/bash
+# <BOOL(<BOOL>) 0.9: suche von teilstring, mittels bool'scher ausdruecke.
+# functions:
+#   BOOL_is_in: prueft ob die regexp in $1 auf den string in $BOOL_string passt.
+#               dabei wird muss der entsprechende teil entweder von stringanfang/ende
+#               oder einem nicht alphanumerischen zeichen umklammert sein.
+#   BOOL_compile_expression:
+#               uebersetzt den suchausdruck in $1, so das er mittels bash(eval)
+#               und is_in() ausgewertet werden kann.
+#   BOOL:       ueberprueft ob der suchausdruck in $1 auf den string in $2 passt.
+SCRIPT_NAME="BOOL"
+SCRIPT_PACKAGE="string-libs"
+SCRIPT_VERSION="0.9"
+SCRIPT_PREFIX="BOOL"
+
+. bash_include		# load include function
+include basic		# every script should(not has to) include the basics.
+
+module_begin "${@}"	# initializes some module related stuff
+
+# global variables and constants:
+BOOL_string=""	# string to match for BOOL_is_in
+
+# BOOL_is_in: prueft ob die regexp in $1 auf den string in $BOOL_string passt.
+# dabei wird muss der entsprechende teil entweder von stringanfang/ende oder
+# nicht alphanumerischen zeichen umklammert sein.
+BOOL_is_in()
+{ expr "X ${BOOL_string} X" : "X.*[^[:alnum:]]\(${1}\)[^[:alnum:]].*X" >/dev/null; }
+
+# BOOL_compile_expression: uebersetzt den suchausdruck in $1, so das er mittels bash(eval) und is_in() ausgewertet werden kann.
+BOOL_compile_expression()
+{
+  printf "%s\n" "${1}" |
+  sed '
+    # auseinandernehmen des suchstrings, dabei werden regexps und logische operatoren durch <newline> getrennt.
+    s/"[^"]*"/\
+&\
+/g
+  ' | sed -n '
+    /^"[^"]*"$/ {
+      s/[()|]/\\&/g;		# (, ) und | durch \(, \) und \| ersetzen, um sie zu ordentlichen regexp-operatoren zu machen.
+      s/^.*$/ BOOL_is_in & /g;	# einfuegen des funktionsaufrufs zum ueberpruefen, ob die regexp (an beliebiger stelle) auf den string passt.
+    }
+    # AND, OR, NOT, ... zu shelloperatoren machen, so koennen wir prioritaet und ausswertung bash ueberlassen.
+    /^[^"]*$/ {
+      s/AND/\&\&/g
+      s/OR/||/g
+      s/NOT/!/g
+    }
+    # ueberfluessige <newlines> wieder rausschmeissen (laeuft nur mit gnu-sed).
+    H
+    $ {
+      x
+      s/\
+//g
+      p
+    }
+  '
+}
+
+# BOOL: ueberprueft ob der suchausdruck in $1 auf den string in $2 passt.
+BOOL()
+{
+  BOOL_string="${2}"
+  eval "$(BOOL_compile_expression "${1}")"
+}
+
+module_end "${@}"	# checks if is running stand alone, or as included module.

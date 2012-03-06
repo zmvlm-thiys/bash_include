@@ -1,0 +1,39 @@
+#!/bin/bash
+# <module name(<prefix>) <version>: <module description>.
+# functions:
+#   <function name>: <function description>.
+#   .
+#   .
+SCRIPT_NAME="<module name>"        # fixed name string for the script.
+SCRIPT_PACKAGE="<package name>"    # if script is part of a collection, name of the collection
+SCRIPT_VERSION="<version>"         # version string of the script.
+SCRIPT_PREFIX="<prefix>"           # prefix for module related functions and variables/consants
+SCRIPT_DESCRIPTION="<description>" # module description
+SCRIPT_API="0"                     # bash_include API used by this script
+
+. bash_include   # load include function
+include basic    # every script should(not has to) include the basics, it is mandatory for SCRIPT_API != 0
+include <module> # include necesary modules
+.
+.
+
+# initialize some module related stuff, this is mandatory for SCRIPT_API != 0
+module_begin "${@}"
+
+# global variables and constants:
+# (both, constants and variables, should begin with <prefix>)
+<CONSTANT>="<value>"         # <constant description>
+<variable>="<default value>" # <variable description>
+.
+.
+
+# function name: function description
+<function name>()
+{
+	function body
+	.
+	.
+}
+
+# check if is running stand alone, or as included module.
+module_end "${@}"

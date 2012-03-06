@@ -1,0 +1,42 @@
+#!/bin/bash
+# <script name>(<prefix)> <version>: <script description>.
+SCRIPT_NAME="<script name>"        # fixed name string for the script
+SCRIPT_PACKAGE="<package name>"    # if script is part of a collection, name of the collection
+SCRIPT_VERSION="<version>"         # version string of the script
+SCRIPT_DESCRIPTION="<description>" # module description
+SCRIPT_API="0"                     # bash_include API used by this script
+
+. bash_include   # load include function
+include basic    # every script should(not must) include the basics, it is mandatory for SCRIPT_API != 0
+include <module> # include necesary modules
+.
+.
+
+# initialize some script related stuff, this is mandatory for SCRIPT_API != 0
+script_begin "${@}"
+
+# global variables and constants:
+# (both, constants and variables, should begin with <prefix>)
+<CONSTANT>="<value>"         # <constant description>
+<variable>="<default value>" # <variable description>
+.
+.
+
+# function name: function description
+<function name>()
+{
+	function body
+	.
+	.
+}
+
+# c-like main, not a must, but somebody may like it
+main()
+{
+	function body
+	.
+	.
+}
+
+# runs main
+script_end "${@}"

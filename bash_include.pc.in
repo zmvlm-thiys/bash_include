@@ -1,0 +1,9 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: bash_include
+Description: bash scripting tools library
+Requires: bash
+Version: @PACKAGE_VERSION@
