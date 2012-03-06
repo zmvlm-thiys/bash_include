@@ -57,15 +57,10 @@ force_include()
 		path="${path//-d/:}"
 		path="${path//-b/\\}"
 		path="${path//-+/-}"
-		${DEBUG+set} && echo "search in ${path}"
+
 		if [ -r "${path}/${1}" ]; then
 			. "${path}/${1}"
 			SCRIPT_API="${SCRIPT_API:-0}"
-#TODO: check if other function could result to correct version check. eval may be to strange
-			for var in "${!SCRIPT_@}"; do
-				test ${!var:+set} &&
-					eval "BASH_INCLUDE_X${1//\//__}_${var#SCRIPT_}=\"\${!var}\""
-			done
 			unset "${!SCRIPT_@}"
 
 			is_included "$1" ||
