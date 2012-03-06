@@ -1,5 +1,5 @@
 #!/bin/bash
-# get-options(opt) 1.9.5: command line parser
+# opt(opt) 1.9.5: command line parser
 #                         supports gnu style longopts.
 # functions:
 #   opt_get(): command line parser.
@@ -8,11 +8,11 @@
 #   opt_show_help(): shows more detailed help text
 #   opt_check(): checks options for errors
 
-SCRIPT_PACKAGE="basics"
 SCRIPT_NAME="opt"
-SCRIPT_DESCRIPTION="gnu style option parser"
-SCRIPT_VERSION="1.9.5"
 SCRIPT_PREFIX="opt"
+SCRIPT_VERSION="1.9.5"
+SCRIPT_DESCRIPTION="gnu style option parser"
+SCRIPT_PACKAGE="bash_include"
 SCRIPT_API="1"
 
 . bash_include		# load include function
