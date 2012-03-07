@@ -1,0 +1,26 @@
+Bash Include
+
+Modularizes bash scripts by introducing a 'include' as well as some coding guidelines and examples. 
+This can be used for cleanly separate reusable functionality from the acctual implementations.
+
+bash_include already provides some basic - essential modules
+
+[how to install]
+
+download gentoo/bash_include/distfiles/*.tar.bz2
+configure --prefix=/what/ever && make && make install
+
+gentoo users may use the ebuild
+
+[how to use]
+
+copy [/what/ever/]lib/bash_include/script-template to any directory and fill the gaps
+take a look at the examples or projects that use bash-include (eg kvm-manager) 
+to get a idea on what you can do
+
+[how to develop]
+
+make -f Makefile.default
+
+clones the repository to a temporary directory, configures, packs the configured sources
+builds them, installs them to a testing directory
