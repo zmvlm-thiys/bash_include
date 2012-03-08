@@ -8,6 +8,7 @@
 SCRIPT_NAME="msg"
 SCRIPT_VERSION="1.0.0rc1"
 SCRIPT_PREFIX="msg"
+SCRIPT_PACKAGE="bash_include"
 SCRIPT_DESCRIPTION="tools for printing out programm messages and errors"
 
 . bash_include  # load include function
