@@ -13,9 +13,10 @@
 #    path_is_relative: gibt 0 zurueck, wenn der pfad aus $1 relativ ist.
 #
 SCRIPT_NAME="path"
-SCRIPT_VERSION="1.0.0rc1"
 SCRIPT_PREFIX="path"
+SCRIPT_VERSION="1.0.0rc1"
 SCRIPT_DESCRIPTION="tools for manipulation of path strings"
+SCRIPT_PACKAGE="bash_include"
 
 . bash_include  # load include function
 include basic

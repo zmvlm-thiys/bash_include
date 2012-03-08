@@ -1,16 +1,17 @@
 #!/bin/bash
-# mpsh(mpsh) 0.5: helper functions for bash mpd communication.
+# var(var) 0.5: helper functions for bash mpd communication.
 # functions:
 #   <function name>: <function description>.
 
 SCRIPT_NAME="var"
-SCRIPT_PACKAGE="basic"
-SCRIPT_VERSION="0.5"
 SCRIPT_PREFIX="var"
-SCRIPT_API="1"
+SCRIPT_VERSION="0.5"
 SCRIPT_DESCRIPTION="tools for variable manipulation"
+SCRIPT_PACKAGE="bash_include"
+SCRIPT_API="1"
 
 . bash_include
+include basic
 include err
 
 var()

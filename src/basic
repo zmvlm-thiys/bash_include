@@ -1,14 +1,14 @@
 #!/bin/bash
-# include-basics(basic) 1.0.0rc1: basics for scripts and includes
+# basic() 1.0.0rc1: basics for scripts and includes
 # functions:
 #   script_begin: sets up enviroment for scripts
 #   script_end: calls main()
 #   module_begin: sets up enviroment for modules
 #   module_end: executes given commandline, if the module is not included.
-SCRIPT_NAME="basic"           # fixed name string for the script.
-SCRIPT_PACKAGE="bash include" # if script is part of a collection, name of the collection
-SCRIPT_VERSION="1.0.0rc1"     # version string of the script.
-# SCRIPT_PREFIX="basic"         # prefix for module related functions and variables/consants
+SCRIPT_NAME="basic"
+SCRIPT_VERSION="1.0.0rc1"
+SCRIPT_DESCRIPTION="basic functinality for scripts and modules"
+SCRIPT_PACKAGE="bash_include"
 
 # script_begin: sets up enviroment for scripts
 script_begin()
