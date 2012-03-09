@@ -1,97 +1,73 @@
 #!/bin/bash
 # messages(msg): shell include for printing out programm messages and errors.
 # functions:
-#   DEBUG: gibt debug-meldungen je nach debug-level auf stderr aus.
-#   msg_message: gibt meldungen je nach verbose-level auf stdout aus, ja, ist fast das selbe wie DEBUG, aber nur fast!
-#   msg_error: gibt eine meldung auf stderr aus. bricht das programm ab, falls msg-panic = true ist.
-#              error ist der rueckgabewert.
+#   DEBUG: prints a debug message according to debug level to stderr
+#   msg_message: prints a message according to verbosity level to stdout
+#   msg_error: print a message to stderr. calls exit if msg-panic == true
 SCRIPT_NAME="msg"
 SCRIPT_VERSION="1.0.0rc1"
 SCRIPT_PREFIX="msg"
 SCRIPT_PACKAGE="bash_include"
 SCRIPT_DESCRIPTION="tools for printing out programm messages and errors"
 
-. bash_include  # load include function
+. bash_include
 include basic
 
-module_begin "${@}" # initializes some module related stuff
+module_begin "${@}"
 
 # global variables and constants:
-msg_debug_level="0" # das ausgabelevel fuer DEBUG
-msg_verbose_level="1" # das ausgabelevel fuer msg_message.
-msg_panic="false" # wenn true bricht msg-error das aktuelle script ab.
-msg_error_return="1" # standard rueckgabewert, wenn msg-panic = "true".
+msg_debug_level="0"
+msg_verbose_level="1"
+msg_panic="false" # if true msg_error calls exit.
+msg_error_code="1" # default exit value for msg_error if msg_panic == true.
 
-# DEBUG: gibt debug-meldungen je nach debug-level auf stderr aus.
-DEBUG()
-{
+# DEBUG: prints a debug message according to debug level to stderr
+# returns always 0
+DEBUG() {
 	local text=""
 	local d_level
 
-	# gehen wir alle parameter durch, bis es entweder keine mehr gibt, oder das debug-level erreicht ist.
-	for (( d_level = 0; (d_level < msg_debug_level) && ($# > 0); d_level++ )); do
-		 # wir wollen text nur setzen, wenn es was neues zu sagen gibt.
+	# use last non-empty parameter below msg_debug_level as message to print
+	for (( d_level = 0; (d_level < msg_debug_level) && ($# > 0); ++d_level )); do
 		text="${1:-$text}"
-		# naechster parameter...
 		shift
 	done
 
-	# okay, wir sind im richtigen debug-level.
-	# gibt es meldungen?
-	test "${text:+set}" ||
-		return 0
-
-	# es gibt meldungen, geben wir sie auf stderr aus.
-	printf "%s\n" "${text}" 1>&2
-
-	# immer 0 zurueckgeben, damit wir DEBUG() auch in &&-verbundene kommandolisten einfuegen koennen
-	return 0
+	if [ "${text:+set}" ]; then
+		1>&2 printf "%s\n" "${text}"
+	fi
+	true
 }
 
-# msg_message: gibt meldungen je nach verbose-level auf stdout aus, ja, ist fast das selbe wie DEBUG, aber nur fast!
-msg_message()
-{
+# msg_message: prints a message according to verbosity level to stdout
+# returns always 0
+msg_message() {
 	local msg_text=""
 	local v_level
 	
-	# gehen wir alle parameter durch, bis es entweder keine mehr gibt, oder das verbose-level erreicht ist.
-	for (( v_level = 0; (v_level < msg_verbose_level) && ($# > 0); v_level += 1 )); do
-		 # wir wollen text nur setzen, wenn es was neues zu sagen gibt.
-		msg_text="${1:-$text}"
-		# naechster parameter...
+	for (( v_level = 0; (v_level < msg_verbose_level) && ($# > 0); ++v_level )); do
+		text="${1:-$text}"
 		shift
 	done
-	# okay, wir sind im richtigen debug-level.
-	# gibt es meldungen?
-	test "${msg_text:+set}" ||
-		return 0
-
-	# es gibt meldungen, geben wir sie aus.
-	printf "%s: %s\n" "${program_name}" "${msg_text}"
-
-	# immer 0 zurueckgeben, damit wir msg_message() auch in &&-verbundene kommandolisten einfuegen koennen
-	return 0
+	
+	if [ "${text:+set}" ]; then
+		printf "%s: %s\n" "${program_name}" "${text}"
+	fi
+	true
 }
 
-# msg_error: gibt eine meldung auf stderr aus. bricht das programm ab, falls msg-panic = true ist.
-# error ist der rueckgabewert.
-msg_error()
-{
-	# ist $2 gesetzt, enthält es den rueckgabewert.
-	# ansonsten enthält msg-error-return den rueckgabewert.
-	local error="${2-${msg_error_return}}"
+# msg_error: print a message to stderr. calls exit if msg-panic == true
+# exit code is $2 if set, $msg_error_code otherwise
+msg_error() {
+	local error="${2-${msg_error_code}}"
 
-	# haben wir ueberhaubt was zu sagen?
 	[ "${1:+not empty}" ] &&
-		# geben wir es aus.
 		printf "%s: %s\n" "${program_name}" "${1}" 1>&2
 
-	# sollen wir abbrechen?
+	# abort execution on error
 	"${msg_panic}" &&
-		# wir sollen!
 		exit "${error}"
 
-	# msg_error gibt den fehler zurueck, kann damit einfach vor exit/return benutzt werden.
 	return "${error}"
 }
 
