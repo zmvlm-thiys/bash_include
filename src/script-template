@@ -1,10 +1,10 @@
 #!/bin/bash
 # <script name>(<prefix)> <version>: <script description>.
 SCRIPT_NAME="<script name>"        # fixed name string for the script
-SCRIPT_PACKAGE="<package name>"    # if script is part of a collection, name of the collection
 SCRIPT_VERSION="<version>"         # version string of the script
 SCRIPT_DESCRIPTION="<description>" # module description
-SCRIPT_API="0"                     # bash_include API used by this script
+SCRIPT_PACKAGE="<package name>"    # if script is part of a collection, name of the collection
+SCRIPT_API="1"                     # bash_include API used by this script. defaults to 0.
 
 . bash_include   # load include function
 include basic    # every script should(not must) include the basics, it is mandatory for SCRIPT_API != 0

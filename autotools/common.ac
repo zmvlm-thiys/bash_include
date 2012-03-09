@@ -1,9 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AM_INIT_AUTOMAKE
 
-dnl AM_PROG_LIBTOOL
-
-
 m4_include([autotools/m4/pkg.m4])
 m4_include([autotools/m4/ax_transform.m4])
 

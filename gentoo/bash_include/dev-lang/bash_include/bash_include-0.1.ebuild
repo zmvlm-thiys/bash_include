@@ -3,7 +3,7 @@
 
 inherit flag-o-matic
 
-DESCRIPTION="Configuration file management for KVM commandline tools"
+DESCRIPTION="Bash enhancement for repeative complex scripts"
 HOMEPAGE="http://struction.de/bash_include"
 SRC_URI="http://struction.de/bash_include/${PV}/${P}.tar.bz2"
 
