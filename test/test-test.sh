@@ -1,22 +1,17 @@
 #!./tester
 #
-test_dontRun() {
-	false
-}
-
 testcase_begin "$@"
-
 test_runTest() {
 	true
 }
 
-teststage_begin
+teststage_proceed
 test_testFails() {
 	_test_runTest false
 	test $? != 0
 }
 
-teststage_begin
+teststage_proceed
 test_assertLastCommandFailed() {
 	false
 	assertLastCommandFailed
@@ -31,7 +26,21 @@ test_assertLastCommandFailed_exits_with_failure_if_last_command_succeeded() {
 	test $? != 0
 }
 
-teststage_begin
+test_assertLastCommandSucceed() {
+	true
+	assertLastCommandSucceed
+}
+
+test_assertLastCommandSucceed_exits_with_failure_if_last_command_failed() {
+	(
+		false
+		assertLastCommandSucceed
+		true
+	)
+	test $? != 0
+}
+
+teststage_proceed
 test_assertEquals() {
 	assertEquals "same" "same"
 }
@@ -41,7 +50,7 @@ test_assertEquals_exits_with_failure_if_parameters_differ() {
 	assertLastCommandFailed
 }
 
-teststage_begin
+teststage_proceed
 test_assertOutput() {
 	assertOutput 'same' echo 'same'
 }
@@ -76,7 +85,7 @@ printfError() {
 	1>&2 2>/dev/null printf "$@"
 }
 
-teststage_begin
+teststage_proceed
 test_assertLastCommandFailed_failure_output() {
 	true
 	assertErrorOutput "assertion failed: last command unexpectly succeded" assertLastCommandFailed
