@@ -1,13 +1,18 @@
 #!/bin/bash
-# <BOOL(<BOOL>) 0.9: suche von teilstring, mittels bool'scher ausdruecke.
+# <BOOL(<BOOL>) 0.9: search substrings using boolean expressions
 # functions:
-#   BOOL_is_in: prueft ob die regexp in $1 auf den string in $BOOL_string passt.
+#   BOOL_is_in: check the regexp in $1 is matching global '$BOOL_string'
+#               the match is either the complete string or non alphanumeric characters
+#               acting as delimiters
+#               prueft ob die regexp in $1 auf den string in $BOOL_string passt.
 #               dabei wird muss der entsprechende teil entweder von stringanfang/ende
 #               oder einem nicht alphanumerischen zeichen umklammert sein.
 #   BOOL_compile_expression:
+#               translates the regexp in $1 to make it usable in bash(eval) is_in().
 #               uebersetzt den suchausdruck in $1, so das er mittels bash(eval)
 #               und is_in() ausgewertet werden kann.
-#   BOOL:       ueberprueft ob der suchausdruck in $1 auf den string in $2 passt.
+#   BOOL:       check if the expression of $1 is matching the string $2
+#               ueberprueft ob der suchausdruck in $1 auf den string in $2 passt.
 SCRIPT_NAME="BOOL"
 SCRIPT_PACKAGE="string-libs"
 SCRIPT_VERSION="0.9"
@@ -21,32 +26,51 @@ module_begin "${@}"	# initializes some module related stuff
 # global variables and constants:
 BOOL_string=""	# string to match for BOOL_is_in
 
+ ##
+ # check the regexp in $1 is matching global '$BOOL_string'
+ # the match is either the complete string or non alphanumeric characters
+ # acting as delimiters
+ # @param regular expression
+ # @return 1 when matching
+#TODO: check return value 1 is a guess
+##
 # BOOL_is_in: prueft ob die regexp in $1 auf den string in $BOOL_string passt.
 # dabei wird muss der entsprechende teil entweder von stringanfang/ende oder
 # nicht alphanumerischen zeichen umklammert sein.
 BOOL_is_in()
-{ expr "X ${BOOL_string} X" : "X.*[^[:alnum:]]\(${1}\)[^[:alnum:]].*X" >/dev/null; }
-
+{
+  expr "X ${BOOL_string} X" : "X.*[^[:alnum:]]\(${1}\)[^[:alnum:]].*X" >/dev/null;
+}
+ ##
+ # translates the regexp in $1 to make it usable in bash(eval) is_in().
+ # @param regular expression
+ # @return transformed expression
+##
 # BOOL_compile_expression: uebersetzt den suchausdruck in $1, so das er mittels bash(eval) und is_in() ausgewertet werden kann.
 BOOL_compile_expression()
 {
   printf "%s\n" "${1}" |
   sed '
+    # split searchstring, by separating regexp and logical opartors using <newline>
     # auseinandernehmen des suchstrings, dabei werden regexps und logische operatoren durch <newline> getrennt.
     s/"[^"]*"/\
 &\
 /g
   ' | sed -n '
     /^"[^"]*"$/ {
-      s/[()|]/\\&/g;		# (, ) und | durch \(, \) und \| ersetzen, um sie zu ordentlichen regexp-operatoren zu machen.
-      s/^.*$/ BOOL_is_in & /g;	# einfuegen des funktionsaufrufs zum ueberpruefen, ob die regexp (an beliebiger stelle) auf den string passt.
+      s/[()|]/\\&/g;		# replace (, ) and | with \(, \) and \| to make them correct regexp operators
+                            # (, ) und | durch \(, \) und \| ersetzen, um sie zu ordentlichen regexp-operatoren zu machen.
+      s/^.*$/ BOOL_is_in & /g;	# check insertion of the function call that checks if the regexp matches the string
+                                # einfuegen des funktionsaufrufs zum ueberpruefen, ob die regexp (an beliebiger stelle) auf den string passt..
     }
+    # AND, OR, NOT, ... transformed to shelloperators to let bash handle precedence and order
     # AND, OR, NOT, ... zu shelloperatoren machen, so koennen wir prioritaet und ausswertung bash ueberlassen.
     /^[^"]*$/ {
       s/AND/\&\&/g
       s/OR/||/g
       s/NOT/!/g
     }
+    # remove redundant <newlines>  (requires gnu-sed).
     # ueberfluessige <newlines> wieder rausschmeissen (laeuft nur mit gnu-sed).
     H
     $ {
@@ -56,8 +80,13 @@ BOOL_compile_expression()
       p
     }
   '
+#TODO: make debug/verbose output that helps users to understand the expression result
 }
-
+ ##
+ # check if the expression of $1 is matching the string $2
+ # @param expression to match
+ # @param searched string
+##
 # BOOL: ueberprueft ob der suchausdruck in $1 auf den string in $2 passt.
 BOOL()
 {
