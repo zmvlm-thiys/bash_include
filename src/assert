@@ -1,0 +1,100 @@
+#!/bin/bash
+#
+SCRIPT_NAME="assert"
+SCRIPT_PREFIX="assert"
+SCRIPT_VERSION="0.1"
+SCRIPT_DESCRIPTION="assertion functions"
+SCRIPT_PACKAGE="bash_include"
+SCRIPT_API="0"
+
+assert() {
+	_assert "$@" || exit
+}
+
+_assert() (
+	_assert_message="${_assert_message:-assertion failed: "$@"}"
+	_assert_fail() {
+		_assert_printfAndFail '%s\n' "${_assert_message}"
+	}
+	case "$1" in
+	that)
+		_assert_that "${@:2}"
+	;;
+	*)
+		"$@"
+		test $? == 0 || _assert_fail
+	;;
+	esac
+)
+
+_assert_printfAndFail() {
+	 1>&2 printf "$@"
+	exit 1
+}
+
+_assert_that() {
+	_assert_expected="${@: -1}"
+	case "${@: -2:1}" in
+	equals)
+		_assert_fail() {
+			_assert_printfAndFail '%s\n' "unexpected value: expected: [$_assert_expected] got: [$_assert_actual]"
+		}
+		_assert_equals_expected "${*:1:$# - 2}"
+	;;
+	writes)
+		_assert_fail() {
+			_assert_printfAndFail '%s\n' "unexpected output: expected: [$_assert_expected] got: [$_assert_actual]"
+		}
+		_assert_equals_expected "$("${@:1:$#-2}")"
+	;;
+	returns)
+		_assert_fail() {
+			_assert_printfAndFail '%s\n' "unexpected return value: expected: [$_assert_expected] got: [$_assert_actual]"
+		}
+		_assert_returns "${@:1:$#-2}"
+	;;
+	contains)
+		_assert_fail() {
+			_assert_printfAndFail '%s\n' "unexpected value in ${_assert_varname}: expected: [$_assert_expected] got: [$_assert_actual]"
+		}
+		_assert_varname="$1"
+		_assert_equals_expected "${!1}"
+	;;
+	*)
+	;;
+	esac
+}
+
+_assert_equals_expected() {
+	_assert_actual="$*"
+	test "|$_assert_actual" == "|$_assert_expected" || _assert_fail
+	exit
+}
+_assert_returns() {
+	"$@"
+	_assert_equals_expected $?
+}
+
+assertEquals() {
+	local _test_assertion="${_test_assertion:-equality assertion failed}"
+	test "|$1" == "|$2" || _test_printfAndFail '%s: expected: [%s] got: [%s]\n' "$_test_assertion" "$1" "$2"
+}
+
+assertLastCommandFailed() {
+	test $? == 0 && _test_printfAndFail 'assertion failed: last command unexpectly succeded\n'
+	true
+}
+
+assertLastCommandSucceed() {
+	test $? == 0 || _test_printfAndFail 'assertion failed: last command unexpectly failed\n'
+}
+
+assertOutput() {
+	local _test_assertion="${_test_assertion:-output assertion failed}"
+	assertEquals "$1" "$(2>/dev/null "${@:2}")"
+}
+
+assertErrorOutput() {
+	local _test_assertion="${_test_assertion:-error output assertion failed}"
+	assertEquals "$1" "$(2>&1 1>/dev/null "${@:2}")"
+}

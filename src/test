@@ -1,0 +1,94 @@
+#!/bin/bash
+#
+SCRIPT_NAME="test"
+SCRIPT_PREFIX=""
+SCRIPT_VERSION="0.1"
+SCRIPT_DESCRIPTION="simple bash test framwork"
+SCRIPT_PACKAGE="bash_include"
+SCRIPT_API="0"
+
+testcase_begin() {
+	local IFS=$'\n'
+	_test_unsetTestFunctions
+	unset ${!_test_*}
+	_test_RED=$'\033[31m'
+	_test_GREEN=$'\033[32m'
+	_test_YELLOW=$'\033[33m'
+	_test_RESET_COLOR=$'\033[39m'
+	_test_PASSED="${_test_GREEN}passed${_test_RESET_COLOR}"
+	_test_FAILED="${_test_RED}failed${_test_RESET_COLOR}"
+	_test_SKIPPED="${_test_YELLOW}skipped${_test_RESET_COLOR}"
+	_test_failedCount=0
+	_test_passedCount=0
+	_test_skippedCount=0
+	_test_runCount=0
+}
+
+testcase_end() {
+	_test_runTestFunctions
+	return $_test_failedCount
+}
+
+_test_unsetTestFunctions() {
+	local IFS=$'\n'
+	for line in $(declare -p -F); do
+		local function="${line#declare -f }"
+		test "test_" == "${function::5}" || continue
+		unset -f $function
+	done
+}
+
+_test_runTestFunctions() {
+	local _test_IFS="$IFS"
+	local IFS=$'\n'
+	for line in $(declare -p -F); do
+		local function="${line#declare -f }"
+		test "test_" == "${function::5}" || continue
+		(( ++_test_runCount ))
+		if (( _test_stageFailed )); then
+			(( ++_test_skippedCount ))
+			printf '%s %s.\n' "${function:5}" "${_test_SKIPPED}"
+		else
+			IFS="$_test_IFS" _test_runTest $function
+		fi
+	done
+	_test_stageFailed=${_test_failedCount}
+}
+
+_test_runTest() {
+	local _test_output _test_result _test_status
+	_test_output="$(2>&1 "$@")"
+	_test_result=$?
+	if [ $_test_result == 0 ]; then
+		_test_status="${_test_PASSED}"
+	else
+		_test_status="${_test_FAILED}"
+	fi
+	printf '%s %s' "${1#test_}" "${_test_status}"
+	if [ -n "${_test_output}" ]; then
+		printf ':\n%s\n' "$(sed 's/^/> /' <<EOF
+${_test_output}
+EOF
+)"
+	else
+		printf ".\n"
+	fi
+
+	if [ $_test_result == 0 ]; then
+		(( ++_test_passedCount ))
+	else
+		(( ++_test_failedCount ))
+	fi
+
+	return $_test_result
+}
+
+teststage_proceed() {
+	_test_runTestFunctions
+	_test_unsetTestFunctions
+}
+
+_test_printfAndFail() {
+	 1>&2 printf "$@"
+	exit 1
+}

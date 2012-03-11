@@ -1,6 +1,7 @@
 #!./tester
 #
 
+include assert
 testcase_begin "$@"
 
 test_empty_testcase() {

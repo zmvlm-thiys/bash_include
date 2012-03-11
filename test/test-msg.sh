@@ -1,6 +1,7 @@
 #!./tester
 #
 include msg
+include assert
 
 testcase_begin "$@"
 program_name=program
