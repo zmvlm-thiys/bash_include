@@ -16,117 +16,105 @@ include err
 
 var()
 {
-	local var_name_value var_name var_value var_index var_return_value
-
-	if (( $# < 1 )); then
-		var_print
-		return
-	fi
-
-	var_return_value=0
-	for var_name_value in "${@}"; do
-		var_index=''
-		case "${var_name_value}" in
-			*'['*']''='*)
-				var_name="${var_name_value%%"["*"]"=*}"
-				var_index="${var_name_value%%]=*}"
-				var_index="${var_index##*[}"
-				var_value="${var_name_value#*=}"
-			;;
-			*'='*)
-				var_name="${var_name_value%%=*}"
-				var_value="${var_name_value#*=}"
-			;;
-			*)
-				var_name="${var_name_value}"
-				var_value=''
-			;;
-		esac
-		if [ -z "${var_name}" ] || [ "X${var_name/[^abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_]}X" != "X${var_name}X" ]; then
-			printf '%s: var: %s: not a valid identifier\n' "$0" "${var_name_value%%=*}" 1>&2
-			var_return_value="${err_INVAL}"
-			continue
-		fi
-		eval "${var_name}${var_index:+[${var_index}]}=\"\${var_value}\""
+	set -- "$@" 0
+	while ${2+true} false; do
+		case "$1" in
+		'@{'*'}')
+			_var_reset "${1:2:${#1}-3}"
+		;;
+		*)
+			_var_set "${1}"
+		;;
+		esac &&
+			shift || set -- "${@:2:$#-2}" "$?"
 	done
+	return "$1"
+}
 
-	return "${var_return_value}"
+_var_reset() {
+	set -- "${1%%[^][abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_]*}" "$1"
+	if ${1:+false} true; then
+		printf "%s: var: no variable name in argument: %s" "$0" "@{$2}" 1>&2
+		return "$err_INVAL"
+	fi
+	eval "${1}=\"\${$2}\""
+}
+
+_var_set()
+{
+	set -- "${1%%=*}" "$1"
+	set -- "$1" "${2:${#1}}"
+	case "$1" in
+	*'['*']')
+		set -- "${1%'['*}" "$2" "$1"
+		;;
+	esac
+	if ${1:+false} true || [ "|${1/[^abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_]}|" != "|$1|" ]; then
+		printf "%s: var: \`%s': not a valid variable name\n" "$0" "$1" 1>&2
+		return "$err_INVAL"
+	fi
+	test -z "$2" && var_is_set ${3:-$1} && return
+	eval "${3:-$1}=\"\${2:1}\""
 }
 
 var_init()
 {
-	local var_name var_default_value var_value
-
-	(( $# < 2 )) &&
-		return err_NOARG
-
-	var_name="$1"
-	var_default_value="$2"
-
 	if [ "${3+set}" ]; then
-		var_value="${!var_name-${var_default_value}}"
+		var "@{$1-$2}"
 	else
-		var_value="${!var_name:-${var_default_value}}"
+		var "@{$1:-$2}"
 	fi
-
-	var "${var_name}=${var_value}"
 }
 
-var_print()
-(
-	set |
-	{
-		IFS=$'\n'
-		while read -r line; do
-			case "${line}" in
-				[A-Za-z_]*=*)
-					printf '%s\n' "${line}"
-				;;
-			esac
-		done
-	}
-)
-
-var_script_init()
-{
+var_script_init() {
 	var_init "${SCRIPT_PREFIX}_$@"
 }
 
-var_is_set()
-{
-	${!1+true} false
-}
-
-var_not_set()
-{
-	${!1+false} true
-}
-
-var_is_empty()
-{
-	${!1:+false} true
-}
-
-var_not_empty()
-{
-	${!1:+true} false
-}
-
-@()
-{
-	(( $# > 0 )) ||
-		return
-	eval "set -- $(printf -- '"${%s}"${IFS:0:1}' "$@")"
-
-	printf '%s' "$1"
-	shift
-
-	for var in "$@"; do
-		printf '%s%s' "${IFS:0:1}" "${var}"
+var_print() {
+	while ${1+true} false; do
+		${!1+true} false &&
+			printf '%s=%s\n' "$1" "$(var_escape "${!1}")"
+		shift
 	done
 }
 
-var_expand()
-{
-	@ "$@"
+var_escape() {
+	local string="${1//\\/\\\\}"
+	local string="${string//\"/\\\"}"
+	local string="${string//\$/\\\$}"
+	printf '"%s"' "${string}"
 }
+
+var_is_set() {
+	${!1+true} false
+}
+
+var_not_set() {
+	${!1+false} true
+}
+
+var_is_empty() {
+	${!1:+false} true
+}
+
+var_not_empty() {
+	${!1:+true} false
+}
+
+var_expand() {
+	(( $# > 0 )) ||
+		return
+
+	eval "printf '%s' \"\${$1}\""
+
+	while ${2+true} false; do
+		shift
+		eval "printf '%s%s' \"\${IFS:0:1}\" \"\${$1}\""
+	done
+}
+
+@() {
+	var_expand "$@"
+}
+
+module_end "$@"
