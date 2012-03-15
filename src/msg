@@ -71,4 +71,4 @@ msg_error() {
 	return "${error}"
 }
 
-module_end "${@}" # checks if is running stand alone, or as included module.
+module_end "${@}"
