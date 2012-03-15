@@ -48,138 +48,132 @@ opt_show_version()
 opt_show_usage() {
 	opt_show_version
 
-	set -- "${!opt_option_@}"
-	while ${1+true} false; do
-		_opt_aggregate_short_opts "$1"
-		shift
+	local _opt_aggregated_noparameter_options
+	local _opt_aggregated_parameter_opts
+
+	for _opt_option in "${!opt_option_@}"; do
+		_opt_aggregate_short_opts "$_opt_option"
 	done
 	printf "Usage: %s%s\n" "${program_name}" "${_opt_aggregated_noparameter_options:+ -${_opt_aggregated_noparameter_options}}${_opt_aggregated_parameter_opts}${opt_additional_usage:+ ${opt_additional_usage}}"
 	printf "Try '%s --help' for more information.\n" "${program_name}"
 }
 
 _opt_aggregate_short_opts() {
-	set -- "$1[opt_SHORT]" "$1[opt_TYPE]" "$1[opt_DEFAULT]"
-	var_is_empty "$1" &&
+	local _opt_short="$1[opt_SHORT]"
+	local _opt_type="$1[opt_TYPE]"
+	local _opt_default="$1[opt_DEFAULT]"
+	var_is_empty "$_opt_short" &&
 		return
-	case "${!2}" in
+	case "${!_opt_type}" in
 	[ifFIrRsS])
-		_opt_aggregated_parameter_opts+=" -${!1:0:1}${!3+[}$(_opt_type_str "${!2}")${!3+]}"
+		_opt_aggregated_parameter_opts+=" -${!_opt_short}$(_opt_parameter_str "$1")"
 	;;
 	*)
-		_opt_aggregated_noparameter_options+="${!1:0:1}"
+		_opt_aggregated_noparameter_options+="${!_opt_short:0:1}"
 	;;
 	esac
 }
 
-_opt_type_str() {
-	set -- "${1/[iI]/INT}"
-	set -- "${1/[fF]/FLOAT}"
-	echo "${1/[rRsS]/STRING}"
+_opt_parameter_str() {
+	local _opt_type="$1[opt_TYPE]"
+	local _opt_default="$1[opt_DEFAULT]"
+	local -u result=${!_opt_type::1}
+	var @{result/%[^iIfFrRsS]}
+	var_is_empty result &&
+		return
+	var @{result/%I/INT}
+	var @{result/%F/FLOAT}
+	var @{result/%[RS]/STRING}
+	echo "${!_opt_default+[}$2${result}${!_opt_default+]}"
 }
 
-opt_show_help() (
-	spacer="    "
-	_opt_max_option_syntax_length=0
+opt_show_help() {
+	local COLUMNS="${COLUMNS:-80}"
+	local _opt_spacer="    "
+	local _opt_max_option_syntax_length=0
 
 	opt_show_usage
 	printf "\n"
 
-	_opt_aggregated_option_syntax=()
-	_opt_aggregated_option_help=()
+	local _opt_aggregated_option_syntax=()
+	local _opt_aggregated_option_help=()
 	local -i _opt_max_option_syntax_length=0
-
 	for option in "${!opt_option_@}"; do
 		_opt_aggregate_option_syntax_and_help "$option"
 	done
-	help_text=("${_opt_aggregated_option_syntax[@]}");
+	for additional_entry in ${!opt_additional_help_entry_@}; do
+		_opt_aggregated_option_syntax+=( "$(@ "$additional_entry[0]")" )
+		_opt_aggregated_option_help+=( "$(@ "$additional_entry[1]")" )
+	_opt_max_option_syntax_length="$(math_max "$(@ "#$additional_entry[0]")" _opt_max_option_syntax_length)"
+	done
 
-	COLUMNS="${COLUMNS:-80}"
-	spacer="$(_opt_create_spacer $COLUMNS $_opt_max_option_syntax_length "    ")"
+	_opt_spacer="$(_opt_create_spacer $COLUMNS $_opt_max_option_syntax_length "    ")"
 	for index in "${!_opt_aggregated_option_syntax[@]}"; do
 		_opt_print_formated_help_line \
 			"$COLUMNS" \
-			"$spacer" \
+			"$_opt_spacer" \
 			"${_opt_aggregated_option_syntax[index]}" \
 			"${_opt_aggregated_option_help[index]}"
 	done
 
-	for additional_entry in ${!opt_additional_help_entry_@}; do
-		_opt_print_formated_help_line \
-			"$COLUMNS" \
-			"$spacer" \
-			"$(@ "${additional_entry}[0]")" \
-			"$(@ "${additional_entry}[1]")"
-	done
-
 	printf '%s\n' "${opt_additional_help}"
-)
+}
 
 _opt_aggregate_option_syntax_and_help() {
-	set -- "$1[opt_LONG]" "$1[opt_SHORT]" "$1[opt_TYPE]" "$1[opt_DEFAULT]" "$1[opt_HELP]"
-	if ${!2:+true} false; then
-		set -- "${@:1:5}" "  -${!2:0:1}${!1:+,} "
+	local _opt_short="$1[opt_SHORT]"
+	local _opt_long="$1[opt_LONG]"
+	local _opt_type="$1[opt_TYPE]"
+	local _opt_default="$1[opt_DEFAULT]"
+	local _opt_help="$1[opt_HELP]"
+	local _opt_syntax
+	local _opt_help
+	if var_not_empty $_opt_short; then
+		_opt_syntax="  -${!_opt_short::1}${!_opt_long:+,} "
 	else
-		set -- "${@:1:5}" "      "
+		_opt_syntax="      "
 	fi
-	if ${!1:+true} false; then
-		set -- "$@""--${!1}"
-	fi
-	case "${!3}" in
-	[iIfFrRsS])
-		if ${!1:+true} false; then
-			set -- "$@""${!4+[}=$(_opt_type_str "${!3}")${!4+]}"
-		elif ${!2:+true} false; then
-			set -- "$@""${!4+[}$(_opt_type_str "${!3}")${!4+]}"
-		fi
-	;;
-	esac
-	_opt_aggregated_option_help+=("${!5}")
-	_opt_aggregated_option_syntax+=("$6")
-	_opt_max_option_syntax_length="$(math_max ${#6} _opt_max_option_syntax_length)"
+	var_not_empty "$_opt_long" &&
+		_opt_syntax+="--${!_opt_long}$(_opt_parameter_str "$1" =)"
+	_opt_aggregated_option_help+=("${!_opt_help}")
+	_opt_aggregated_option_syntax+=("$_opt_syntax")
+	_opt_max_option_syntax_length="$(math_max ${#_opt_syntax} _opt_max_option_syntax_length)"
 }
 
 _opt_create_spacer() {
-	if (( "$1" < 10 )); then
+	local -i "columns=$1"
+	local -i "size=$2"
+	if (( columns < 10 )); then
 		echo " "
 		return
-	elif (( ("$1" - "$2") < 10 )); then
+	elif (( (columns - size) < 10 )); then
 		echo "   "
 		return
 	else
-		set -- "$2" "    "
-		while (( ${#2} < "$1" )); do
-			set -- "$1" "$2$2"
+		local spacer="    ";
+		while (( ${#spacer} < size )); do
+			spacer+="$spacer"
 		done
-		echo "${2::$1} "
+		echo "${spacer::size} "
 	fi
 }
 
 _opt_print_formated_help_line() {
-	set -- "$1" "$2" "$3${2::${#2} - ${#3}}$4"
-	while (( ${#3} > "$1" )); do
-		set -- "$1" "$2" "$3" "${3:: $1 - 1}"
-		set -- "$1" "$2" "${4##*[[:space:]]}${3#[[:space:]]}" "${4%[[:space:]]*}"
-		printf '%s\n' "${4}"
-		set -- "$1" "$2" "$2${3: $1 - 2}"
+	local -i "columns=$1"
+	local "spacer=$2"
+	local "line=$3${spacer::${#spacer}-${#3}}$4"
+	local part
+	while (( ${#line} > columns )); do
+		part="${line::columns}"
+		line="${spacer}${part##*[[:space:]]}${line: columns}"
+		var @{part%[[:space:]]*}
+		printf '%s\n' "$part"
 	done
-	printf '%s\n' "${3}"
+	printf '%s\n' "$line"
 }
 
 opt_get() {
-	# localy used variables  #
-	local opt
-	local short
-
 	# create a hash string to find options fast:
-	for opt in "${!opt_option_@}"; do
-		short="$(@ "${opt}[opt_SHORT]")"
-		while (( ${#short} )); do
-			opt_SHASH="$opt_SHASH-${short:0:1}:${opt##opt_option_}"
-			short=${short:1}
-		done
-		opt_LHASH="$opt_LHASH--$(@ "${opt}[opt_LONG]"):${opt##opt_option_}"
-	done
-
+	_opt_create_hashs
 	opt_last_argument=1
 	while ${!opt_last_argument+true} false; do
 		(( _opt_next_argument = opt_last_argument + 1 ))
@@ -221,38 +215,80 @@ opt_get() {
 	return 0
 }
 
+_opt_create_hashs() {
+	# localy used variables  #
+	local opt
+	local short
+
+	for opt in "${!opt_option_@}"; do
+		short="$(@ "${opt}[opt_SHORT]")"
+		while (( ${#short} )); do
+			opt_SHASH="$opt_SHASH-${short:0:1}:${opt##opt_option_}"
+			short=${short:1}
+		done
+		opt_LHASH="$opt_LHASH--$(@ "${opt}[opt_LONG]"):${opt##opt_option_}"
+	done
+}
+
+
 _opt_get_long_option() {
-	set -- "${opt_LHASH#*"$1":}" "$1" ${2+"$2"}
-	_opt_invoke_option "opt_option_${1%%--*}" "$2" ${3+"$3"}
+	_opt_invoke_option "$(_opt_option_for_long_option "$1")" "$1" ${2+"$2"}
+}
+
+_opt_option_for_long_option() {
+	local _opt_suffix="opt_option_${opt_LHASH#*"$1":}"
+	echo "${_opt_suffix%%--*}"
 }
 
 _opt_get_short_option() {
-	while (( ${#1} > 1 )); do
-		set -- "${opt_SHASH#*"${1::2}":}" "$1" ${2+"$2"}
-		set -- "opt_option_${1%%-*}" "$2" ${3+"$3"}
-		_opt_invoke_option "$1" "${2::2}" "${2:2}" ${3+"$3"} ||
-			return
-		if test -n "${!1#[bB]}"; then
-			if test -z "${2:2}"; then
+	local _opt_string="$1"
+	local _opt_short_option
+	local _opt_parameter
+	local _opt_option
+	while (( ${#_opt_string} > 1 )); do
+		_opt_short_option="${_opt_string::2}"
+		_opt_parameter="${_opt_string:2}"
+		_opt_option="$(_opt_option_for_short_option "$_opt_short_option")"
+		_opt_invoke_option \
+			"${_opt_option}"\
+			"${_opt_short_option}" \
+			${_opt_parameter:+"${_opt_parameter}"} \
+			${2+"$2"} ||
+				return
+		if ! _opt_is_boolean "${_opt_option}"; then
+			if test -z "${_opt_parameter}"; then
 				(( ++opt_last_argument ))
 			fi
 			return 0
 		fi
-		set -- "-${2:2}" ${3+"$3"}
+		_opt_string="-${_opt_string:2}"
 	done
 }
 
+_opt_option_for_short_option() {
+	local _opt_suffix="${opt_SHASH#*"$1":}"
+	echo "opt_option_${_opt_suffix%%-*}"
+}
+
+_opt_is_boolean() {
+	local _opt_type="$1[opt_TYPE]"
+	test "b" == "${!_opt_type/B/b}"
+}
+
 _opt_invoke_option() {
-	if ${!1+false} true; then
-		opt_bad_option 'unknown option' "${3::2}"; return
+	local _opt_option="$1"
+	local _opt_string="$2"
+	local _opt_type="$1[opt_TYPE]"
+	local _opt_default="$1[opt_DEFAULT]"
+	local _opt_action="$1[opt_ACTION]"
+	if var_not_set "$_opt_option"; then
+		opt_bad_option 'unknown option' "$2"; return
 	fi
-	set -- "$1" "$2" "$1[opt_DEFAULT]" ${3:+"$3"} ${4+"$4"}
-	set -- "$1" "$2" ${4+"$4"} ${!3+"${!3}"}
-    _opt_check_value "$1[opt_TYPE]" "${2}" ${3+"$3"} ||
+	set -- ${3+"$3"} ${4+"$4"} ${!_opt_default+"${!_opt_default}"}
+	local parameter${1+="$1"}
+	_opt_check_value "$_opt_type" "$_opt_string" ${parameter+"${parameter}"} ||
 		return
-	local parameter${3+"=$3"}
-	set -- "$1[opt_ACTION]"
-	eval "${!1}"
+	eval "${!_opt_action}"
 }
 
 _opt_check_value() {

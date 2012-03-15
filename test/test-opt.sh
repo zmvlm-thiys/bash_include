@@ -47,10 +47,8 @@ opt_option_09=(r "r"  "raw"         'option="raw=$parameter"')
 opt_option_09[opt_HELP]="raw."
 opt_option_10=(R "R"  "raw-default" 'option="raw=$parameter"' "default")
 opt_option_10[opt_HELP]="raw with default parameter."
-opt_option_11=(b "h?" "help"            'opt_show_help; exit')
-opt_option_11[opt_HELP]="shows this text and exits. and this a wretched long line of helping advice."
-
 testcase_begin "$@"
+
 test_opt_show_version() {
 	assert that opt_show_version writes 'bash_include test-opt-1.0'
 }
@@ -58,14 +56,67 @@ test_opt_show_version() {
 test_opt_show_usage() {
 	assert that opt_show_usage writes "\
 bash_include test-opt-1.0
-Usage: test-opt -bch -iINT -I[INT] -fFLOAT -F[FLOAT] -sSTRING -S[STRING] -e[STRING] -rSTRING -R[STRING]
+Usage: test-opt -bc -iINT -I[INT] -fFLOAT -F[FLOAT] -sSTRING -S[STRING] -e[STRING] -rSTRING -R[STRING]
 Try 'test-opt --help' for more information."
 }
 
+test_opt_show_usage_shows_additional_usage() {
+	opt_additional_usage="files"
+	assert that opt_show_usage writes "\
+bash_include test-opt-1.0
+Usage: test-opt -bc -iINT -I[INT] -fFLOAT -F[FLOAT] -sSTRING -S[STRING] -e[STRING] -rSTRING -R[STRING] files
+Try 'test-opt --help' for more information."
+}
+
+test_opt_print_formated_help_line_removes_space_at_end_of_line() {
+COLUMNS=30
+spacer="$(_opt_create_spacer $COLUMNS 12)"
+NEWLINE=$'\n'
+assert that _opt_print_formated_help_line $COLUMNS "$spacer" "with space:" "| filler__ text |linebreak" \
+	writes "with space:  | filler__ text$NEWLINE$spacer|linebreak"
+}
+test_opt_print_formated_help_line_breaks_after_word_at_end_of_line() {
+NEWLINE=$'\n'
+COLUMNS=30
+spacer="$(_opt_create_spacer $COLUMNS 12)"
+assert that _opt_print_formated_help_line $COLUMNS "$spacer" "with word:"   "| filler___ text |linebreak" \
+	writes "with word:   | filler___ text$NEWLINE$spacer|linebreak"
+}
+test_opt_print_formated_help_line_breaks_before_word_overlapping_end_of_line() {
+NEWLINE=$'\n'
+COLUMNS=30
+spacer="$(_opt_create_spacer $COLUMNS 12)"
+assert that _opt_print_formated_help_line $COLUMNS "$spacer" "in word:"   "| filler text |linebreak" \
+	writes "in word:     | filler text$NEWLINE$spacer|linebreak"
+}
+
+teststage_proceed
 test_opt_show_help() {
+	COLUMNS=80
 	assert that opt_show_help writes "\
 bash_include test-opt-1.0
-Usage: test-opt -bch -iINT -I[INT] -fFLOAT -F[FLOAT] -sSTRING -S[STRING] -e[STRING] -rSTRING -R[STRING]
+Usage: test-opt -bc -iINT -I[INT] -fFLOAT -F[FLOAT] -sSTRING -S[STRING] -e[STRING] -rSTRING -R[STRING]
+Try 'test-opt --help' for more information.
+
+  -b, --boolean                  boolean.
+  -c, --counter                  counter.
+  -i, --integer=INT              integer.
+  -I, --integer-default[=INT]    integer with default parameter.
+  -f, --floating=FLOAT           floating.
+  -F, --floating-default[=FLOAT] floating with default parameter.
+  -s, --string=STRING            string.
+  -S, --string-default[=STRING]  string with default parameter.
+  -e, --string-empty[=STRING]    string with empty default parameter.
+  -r, --raw=STRING               raw.
+  -R, --raw-default[=STRING]     raw with default parameter."
+}
+
+test_opt_show_help_shows_additional_entry() {
+	COLUMNS=80
+	opt_additional_help_entry_00=( "additional" "help entry")
+	assert that opt_show_help writes "\
+bash_include test-opt-1.0
+Usage: test-opt -bc -iINT -I[INT] -fFLOAT -F[FLOAT] -sSTRING -S[STRING] -e[STRING] -rSTRING -R[STRING]
 Try 'test-opt --help' for more information.
 
   -b, --boolean                  boolean.
@@ -79,8 +130,7 @@ Try 'test-opt --help' for more information.
   -e, --string-empty[=STRING]    string with empty default parameter.
   -r, --raw=STRING               raw.
   -R, --raw-default[=STRING]     raw with default parameter.
-  -h, --help                     shows this text and exits. and this a
-                                 wretched long line of helping advice."
+additional                       help entry"
 }
 
 teststage_proceed
