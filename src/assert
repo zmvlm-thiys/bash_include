@@ -34,6 +34,7 @@ _assert_printfAndFail() {
 
 _assert_that() {
 	_assert_expected="${@: -1}"
+	_assert_expression="${*:1:$# - 2}"
 	case "${@: -2:1}" in
 	equals)
 		_assert_fail() {
@@ -43,19 +44,19 @@ _assert_that() {
 	;;
 	writes)
 		_assert_fail() {
-			_assert_printfAndFail '%s\n' "unexpected output: expected: [$_assert_expected] got: [$_assert_actual]"
+			_assert_printfAndFail '%s\n' "unexpected output excuting $_assert_expression: expected: [$_assert_expected] got: [$_assert_actual]"
 		}
 		_assert_equals_expected "$("${@:1:$#-2}")"
 	;;
 	returns)
 		_assert_fail() {
-			_assert_printfAndFail '%s\n' "unexpected return value: expected: [$_assert_expected] got: [$_assert_actual]"
+			_assert_printfAndFail '%s\n' "unexpected return value excuting $_assert_expression: expected: [$_assert_expected] got: [$_assert_actual]"
 		}
 		_assert_returns "${@:1:$#-2}"
 	;;
 	contains)
 		_assert_fail() {
-			_assert_printfAndFail '%s\n' "unexpected value in ${_assert_varname}: expected: [$_assert_expected] got: [$_assert_actual]"
+			_assert_printfAndFail '%s\n' "unexpected value in ${_assert_expression}: expected: [$_assert_expected] got: [$_assert_actual]"
 		}
 		_assert_varname="$1"
 		_assert_equals_expected "${!1}"

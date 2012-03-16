@@ -38,6 +38,18 @@ test_assert_that_equals_exits_with_failure_for_unexpected_value() {
 	)
 }
 
+test_assert_that_contains() {
+	x=same
+	assert that x contains 'same'
+}
+
+test_assert_that_contains_exits_with_failure_for_unexpected_value() {
+	! (
+		x=but
+		assert that x contains 'different'
+		true
+	)
+}
 teststage_proceed
 test_assert_that_writes() {
 	assert that echo output writes output
