@@ -50,7 +50,7 @@ _var_set()
 		;;
 	esac
 	if ${1:+false} true || [ "|${1/[^abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_]}|" != "|$1|" ]; then
-		printf "%s: var: \`%s': not a valid variable name\n" "$0" "$1" 1>&2
+		printf "%s: var: \`%s': not a valid variable name\n" "$0" "${3:-$1}" 1>&2
 		return "$err_INVAL"
 	fi
 	test -z "$2" && var_is_set ${3:-$1} && return
