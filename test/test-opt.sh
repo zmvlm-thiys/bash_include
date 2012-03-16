@@ -11,42 +11,32 @@ include opt
 include assert
 
 script_begin
-# fixture
-msg_panic=false
-msg_verbose_level=1
-msg_debug_level=0
-lr_force=false
-lr_preserve=true
-lr_resolve_level=0
-lr_fallback_level=0
-lr_relative=false
-lr_absolute=false
-lr_simplify=false
-lr_dive=false
-lr_source_list=()
 
-opt_option_00=(b "b"  "boolean"           'option=boolean')
-opt_option_00[opt_HELP]="boolean."
-opt_option_01=(B "c"  "counter"           '(( ++counter ))')
-opt_option_01[opt_HELP]="counter."
-opt_option_02=(i "i"  "integer"         'option="integer=$parameter"')
-opt_option_02[opt_HELP]="integer."
-opt_option_03=(I "I"  "integer-default" 'option="integer=$parameter"' 10)
-opt_option_03[opt_HELP]="integer with default parameter."
-opt_option_04=(f "f"  "floating"         'option="floating=$parameter"')
-opt_option_04[opt_HELP]="floating."
-opt_option_05=(F "F"  "floating-default" 'option="floating=$parameter"' 1.0e+10)
-opt_option_05[opt_HELP]="floating with default parameter."
-opt_option_06=(s "s"  "string"         'option="string=$parameter"')
-opt_option_06[opt_HELP]="string."
-opt_option_07=(S "S"  "string-default" 'option="string=$parameter"' "default")
-opt_option_07[opt_HELP]="string with default parameter."
-opt_option_08=(s "e"  "string-empty" 'option="string=$parameter"' "")
-opt_option_08[opt_HELP]="string with empty default parameter."
-opt_option_09=(r "r"  "raw"         'option="raw=$parameter"')
-opt_option_09[opt_HELP]="raw."
-opt_option_10=(R "R"  "raw-default" 'option="raw=$parameter"' "default")
-opt_option_10[opt_HELP]="raw with default parameter."
+teststage_setup() {
+	option=
+	opt_option_00=(b "b"  "boolean"           'option=boolean')
+	opt_option_00[opt_HELP]="boolean."
+	opt_option_01=(B "c"  "counter"           '(( ++counter ))')
+	opt_option_01[opt_HELP]="counter."
+	opt_option_02=(i "i"  "integer"         'option="integer=$parameter"')
+	opt_option_02[opt_HELP]="integer."
+	opt_option_03=(I "I"  "integer-default" 'option="integer=$parameter"' 10)
+	opt_option_03[opt_HELP]="integer with default parameter."
+	opt_option_04=(f "f"  "floating"         'option="floating=$parameter"')
+	opt_option_04[opt_HELP]="floating."
+	opt_option_05=(F "F"  "floating-default" 'option="floating=$parameter"' 1.0e+10)
+	opt_option_05[opt_HELP]="floating with default parameter."
+	opt_option_06=(s "s"  "string"         'option="string=$parameter"')
+	opt_option_06[opt_HELP]="string."
+	opt_option_07=(S "S"  "string-default" 'option="string=$parameter"' "default")
+	opt_option_07[opt_HELP]="string with default parameter."
+	opt_option_08=(s "e"  "string-empty" 'option="string=$parameter"' "")
+	opt_option_08[opt_HELP]="string with empty default parameter."
+	opt_option_09=(r "r"  "raw"         'option="raw=$parameter"')
+	opt_option_09[opt_HELP]="raw."
+	opt_option_10=(R "R"  "raw-default" 'option="raw=$parameter"' "default")
+	opt_option_10[opt_HELP]="raw with default parameter."
+}
 testcase_begin "$@"
 
 test_opt_show_version() {
@@ -66,28 +56,6 @@ test_opt_show_usage_shows_additional_usage() {
 bash_include test-opt-1.0
 Usage: test-opt -bc -iINT -I[INT] -fFLOAT -F[FLOAT] -sSTRING -S[STRING] -e[STRING] -rSTRING -R[STRING] files
 Try 'test-opt --help' for more information."
-}
-
-test_opt_print_formated_help_line_removes_space_at_end_of_line() {
-COLUMNS=30
-spacer="$(_opt_create_spacer $COLUMNS 12)"
-NEWLINE=$'\n'
-assert that _opt_print_formated_help_line $COLUMNS "$spacer" "with space:" "| filler__ text |linebreak" \
-	writes "with space:  | filler__ text$NEWLINE$spacer|linebreak"
-}
-test_opt_print_formated_help_line_breaks_after_word_at_end_of_line() {
-NEWLINE=$'\n'
-COLUMNS=30
-spacer="$(_opt_create_spacer $COLUMNS 12)"
-assert that _opt_print_formated_help_line $COLUMNS "$spacer" "with word:"   "| filler___ text |linebreak" \
-	writes "with word:   | filler___ text$NEWLINE$spacer|linebreak"
-}
-test_opt_print_formated_help_line_breaks_before_word_overlapping_end_of_line() {
-NEWLINE=$'\n'
-COLUMNS=30
-spacer="$(_opt_create_spacer $COLUMNS 12)"
-assert that _opt_print_formated_help_line $COLUMNS "$spacer" "in word:"   "| filler text |linebreak" \
-	writes "in word:     | filler text$NEWLINE$spacer|linebreak"
 }
 
 teststage_proceed
@@ -258,4 +226,63 @@ test_opt_get_options_and_no_option_arguments() {
 	assert that opt_no_options[@] contains "first_argument -not_an_option"
 }
 
+teststage_proceed
+teststage_setup() {
+	:
+}
+
+xtest_opt_option_creates_options() {
+	opt_option "${opt_fields[@]}"
+	opt_option "${opt_fields[@]}"
+	options=( "${!opt_option_@}" )
+	options_count="${#options[@]}"
+	assert that options_count contains 2
+}
+
+xtest_opt_option_initializes_option() {
+	opt_option "${opt_fields[@]}"
+	options=( "${!opt_option_@}" )
+	for field in "${opt_fields[@]}"; do 
+		assert that "${options[0]}[opt_$field]" contains $field
+	done
+}
+
+xtest_opt_option_uses_named_parameters() {
+	opt_option help=HELP action=ACTION default=DEFAULT short=SHORT long=LONG type=TYPE
+	options=( "${!opt_option_@}" )
+	for field in "${opt_fields[@]}"; do 
+		assert that "${options[0]}[opt_$field]" contains $field
+	done
+}
+
+test_opt_option_example(){
+	opt_option b "b" "boolean" action='option=boolean' help="boolean."
+	opt_option B "c" "counter" action='(( ++counter ))' help="counter."
+	opt_option i "i" "integer" action='option="integer=$parameter"' help="integer."
+	opt_option I "I" "integer-default" default=10 action='option="integer=$parameter"' help="integer with default parameter."
+	opt_option f "f" "floating" action='option="floating=$parameter"' help="floating."
+	opt_option F "F" "floating-default" default=1.0e+10 action='option="floating=$parameter"' help="floating with default parameter."
+	opt_option s "s" "string" action'option="string=$parameter"' help="string."
+	opt_option S "S" "string-default" default='default' 'option="string=$parameter"' help="string with default parameter."
+	opt_option s "e" "string-empty" default= action='option="string=$parameter"' help="string with empty default parameter."
+	opt_option r "r" "raw" action='option="raw=$parameter"' help="raw."
+	opt_option R "R" "raw-default" default="default" action='option="raw=$parameter"' help="raw with default parameter."
+	COLUMNS=80
+	assert that opt_show_help writes "\
+bash_include test-opt-1.0
+Usage: test-opt -bc -iINT -I[INT] -fFLOAT -F[FLOAT] -sSTRING -S[STRING] -e[STRING] -rSTRING -R[STRING]
+Try 'test-opt --help' for more information.
+
+  -b, --boolean                  boolean.
+  -c, --counter                  counter.
+  -i, --integer=INT              integer.
+  -I, --integer-default[=INT]    integer with default parameter.
+  -f, --floating=FLOAT           floating.
+  -F, --floating-default[=FLOAT] floating with default parameter.
+  -s, --string=STRING            string.
+  -S, --string-default[=STRING]  string with default parameter.
+  -e, --string-empty[=STRING]    string with empty default parameter.
+  -r, --raw=STRING               raw.
+  -R, --raw-default[=STRING]     raw with default parameter."
+}
 testcase_end "$@"
