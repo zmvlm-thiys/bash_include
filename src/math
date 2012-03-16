@@ -18,28 +18,25 @@ math_max() {
 
 math_is_int() (
 	shopt -s extglob
-	val="${1}"
-	
-	val="${val}XY"
-	val="${val#[+-]}"
-	val="${val##[123456789]*([0123456789])X}"
-	val="${val##0x+([0123456789ABCDEFabcdef])X}"
-	val="${val##0*([01234567])X}"
+	string="${1//X/Z}XY"
+	string="${string#[+-]}"
+	string="${string##[123456789]*([0123456789])X}"
+	string="${string##0x+([0123456789ABCDEFabcdef])X}"
+	string="${string##0[1234567]*([01234567])X}"
 
-	[ 'Y' = "${val}" ]
+	test 'Y' == "${string}"
 )
 
 math_is_float() (
 	shopt -s extglob
-	val="${1}"
+	string="${1//X/Z}"
+	string="${string%[eE]?([-+])[123456789]*([0123456789])}XY"
 
-	val="${val}XY"
-	val="${val#[+-]}"
-	val="${val##*([0123456789]).}"
-	val="${val##+([0123456789])[Ee]}"
-	val="${val#[+-]}"
-	val="${val##+([0123456789])X}"
+	string="${string#[-+]}"
+	string="${string##[123456789]*([0123456789])?(.+([0123456789]))X}"
+	string="${string##[0]?(.+([0123456789]))X}"
+	string="${string##.+([0123456789])X}"
 
-	[ 'Y' = "${val}" ]
+	test 'Y' == "${string}"
 )
 
