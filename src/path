@@ -1,17 +1,14 @@
 #!/bin/bash
 # path-tools(path) 1.0.0rc1: functions for path manipulation.
 # functions:
-#    path_remove_trailing_slash: gibt den pfad aus $1 ohne trailing slash auf stdout aus
-#    path_simplify: gibt den pfad $1 vereinfacht auf stdout aus.
-#    path_absolute: gibt den absoluten pfad vom zu $1 relativem pfad $2 (ist $2 nicht gegeben,
-#                   zu $PWD relativem $1) aus.
-#    path_relative: gibt den relativen pfad von $1 zu $2 (ist $2 nicht gegeben, von PWD zu $1)
-#                   auf stdout aus.
-#  fuer alle bis hier funktionen gilt, ist $1 nicht gegeben, wird inhalt von stdin als $1 genommen.
-#
-#    path_is_absolute: gibt 0 zurueck, wenn der pfad aus $1 absolut ist.
-#    path_is_relative: gibt 0 zurueck, wenn der pfad aus $1 relativ ist.
-#
+#    path_remove_trailing_slash: write a path without trailing slash to stdout
+#    path_simplyify: prints simplified path to stdout.
+#    path_make_absolute: write an absolute path to stdout.
+#    path_make_relative: write a relative path to stdout.
+#    path_is_absolute: return true if path is absolute
+#    path_is_relative: return true if path is relative
+# all functions in this module obtain their first argument from stdin if no
+# parameter is passed
 SCRIPT_NAME="path"
 SCRIPT_PREFIX="path"
 SCRIPT_VERSION="1.0.0rc1"
@@ -20,119 +17,115 @@ SCRIPT_PACKAGE="bash_include"
 
 . bash_include
 include basic
-
+include var
 module_begin "${@}"
 
-# path_remove_trailing_slash: gibt den pfad aus $1 ohne trailing slash auf stdout aus
+# path_remove_trailing_slash: write a path without trailing slash to stdout
+# a path is either passed as first parameter or obtained from stdin.
+# writes the path to stdout ommiting any trailing slashes
 path_remove_trailing_slash() (
 	shopt -s extglob
+	path="${1-$(cat)}"
 
-	test ${1+set} || set -- "$(cat)"
-	set -- "${1:-.}"
-	set -- "${1%%*(/)}"
-	printf "%s\n" "${1:-/}"
+	var_is_empty path && return
+	path="${path%%*(/)}"
+	printf '%s\n' "${path:-/}"
 )
 
-# simplyify_path: gibt vereinfachten pfad auf stdout aus.
+# path_simplyify: prints simplified path to stdout.
+# the path to simplify is passed as first parameter or obtained from stdin.
 path_simplify() (
 	shopt -s extglob
-
-	simplePath="/"
-	pathPart=""
 	path="${1-$(cat)}"
-	path="${path//+('/')//}"
-	IFS="/"
-	for pathPart in ${path}; do
-		if [ '.' == "${pathPart}" ]; then
-			continue
-		elif [ '..' == "${pathPart}" ]; then
-			case "${simplePath}" in
-			*/..//|/)
-				simplePath+="..//"
-			;;
-			*/*//)
-				simplePath="${simplePath%/*//}/"
-			;;
+
+	simplePath=( )
+	IFS='/'
+	for pathPart in $path; do
+		case "$pathPart" in
+		.) continue ;;
+		..)
+			case "${simplePath[@]: -1}" in
+			..) simplePath+=("..") ;;
+			'')	simplePath=( "${simplePath[0]-..}" ) ;;
+			*) simplePath=( "${simplePath[@]::${#simplePath[@]}-1}" ) ;;
 			esac
-		elif [ '' == "${pathPart}" ]; then
-			simplePath+="${simplePath:-/}"
-		else
-			simplePath+="${pathPart}//"
+		;;
+		'') simplePath=( "${simplePath[@]-}" ) ;;
+		*) simplePath+=( "${pathPart}" ) ;;
+		esac
+	done
+	path="${simplePath[*]-.}"
+	printf '%s\n' "${path:-/}"
+)
+
+# path_make_absolute: write an absolute path to stdout.
+# a path is either passed as first parameter or obtained from stdin.
+#if that path is relative the current working directory is prepended.
+# if no second parameter is passed that path is written to stdout.
+# if a relative path is passed as second parameter it is appended to the former
+# path and the result is written to stdout.
+# if an absolute path is passed as second parameter that path is written to stdout.
+path_make_absolute() {
+	local path="$2"
+	if path_is_relative "$path"; then
+		path="${1-$(cat)}${path:+"/$path"}"
+		if path_is_relative "$path"; then
+			path="$PWD${path:+"/$path"}"
 		fi
-	done
-	simplePath="${simplePath:1}"
-	simplePath="${simplePath:-.}"
-	simplePath="${simplePath//\/\///}"
-	simplePath="${simplePath%/}"
-	simplePath="${simplePath:-/}"
-	printf '%s\n' "${simplePath}"
-)
-
-# path_absolute: macht einen relativen pfad absolut, ausgehend entweder vom pfad in $1 (wenn $2
-# gegeben ist), oder vom akktuellem arbeitsverzeichnis (wenn nur $1 gegeben ist).
-path_absolute() (
-	test ${1+set} || set -- "$(cat)"
-
-	if [ ${2+set} ]; then
-		source_path="$(path_absolute "$1")" ||
-			return
-		dest_path="$2"
-	else
-		source_path="${PWD}"
-		dest_path="$1"
 	fi
-
-	if [ "${dest_path::1}" != "/" ]; then
-		dest_path="${source_path}/${dest_path}"
-	fi
-
-	printf "%s\n" "${dest_path}"
-)
-
-# relative_path: gibt den relativen pfad von $1 zu $2 auf stdout aus.
-path_relative() (
-	test ${1+set} || set -- "$(cat)"
-
-	if [ ${2+set} ]; then
-		source_path="$(path_absolute "$1" | path_simplify)" ||
-			return
-		dest_path="$(path_absolute "$2" | path_simplify)" ||
-			return
-	else
-		source_path="${PWD}"
-		dest_path="$(path_absolute "$1" | path_simplify)" ||
-			return
-	fi
-
-	#source-path und dest-path brauchen einen trailing slash, solange sie nicht rootpfad sind ("/"):
-	test '/' != "${source_path}"&&
-		source_path="${source_path}/"
-	test '/' != "${dest_path}" &&
-		dest_path="${dest_path}/"
-	
-	while [ "|${source_path%%/*}" == "|${dest_path%%/*}" ] && [ "${dest_path:+set}" ]; do
-		dest_path="${dest_path#*/}"
-		source_path="${source_path#*/}"
-	done
-
-	for garbage in ${source_path}; do
-		dest_path="../${dest_path}"
-	done
-	
-	path_remove_trailing_slash "${dest_path:-.}"
-)
-
-# path_is_absolute: gibt 0 zurueck, wenn der pfad aus $1 absolut ist.
-path_is_absolute() {
-	test ${1+set} || set -- "$(cat)"
-	test ${1:+set} &&
-		test '/' == "${1::1}"
+	printf '%s\n' "$path"
 }
 
-# path_is_relative: gibt 0 zurueck, wenn der pfad aus $1 relativ ist.
+# path_make_relative: write a relative path to stdout.
+# a path is either passed as first parameter or obtained from stdin.
+# if a second argument is passed a relative path leading from the first path
+# to the second is written to stdout.
+# if no second parameter is passed a relative path leading from the current
+# working directory to the passed path is written to stdout.
+# if any of the paths passed is relative it is interpreted as path starting
+# at the current working directory.
+path_make_relative() (
+	path="$(path_make_absolute ${1+"$1"} | path_simplify)/"
+
+	IFS='/'
+	if [ ${2+set} ]; then
+		origin=( $path )
+		destination=( $(path_make_absolute "$2" | path_simplify) )
+	else
+		origin=( $PWD )
+		destination=( $path )
+	fi
+
+	# remove common start
+	while [ "|${origin[0]}" == "|${destination[0]}" ] && (( ${#destination[@]} )); do
+		destination=( "${destination[@]:1}" )
+		origin=( "${origin[@]:1}" )
+	done
+
+	# move from origin to lowest common node
+	for garbage in "${origin[@]}"; do
+		destination=( .. "${destination[@]}" )
+	done
+	
+	printf '%s\n' "${destination[*]:-.}"
+)
+
+# path_is_absolute: returns true if path is absolute
+# a path is either passed as first parameter or obtained from stdin.
+# returns true if the path starts with '/', false otherwise
+path_is_absolute() {
+	local path="${1-$(cat)}"
+	var_not_empty path &&
+		test '/' == "${path::1}"
+}
+
+# path_is_relative: returns true if path is relative
+# a path is either passed as first parameter or obtained from stdin.
+# returns true if the path is empty or does not start with '/', false otherwise
 path_is_relative() {
-	test ${1+set} || set -- "$(cat)"
-	test '/' != "${1::1}"
+	local path="${1-$(cat)}"
+	var_is_empty path ||
+		test '/' != "${path::1}"
 }
 
 module_end "${@}"
