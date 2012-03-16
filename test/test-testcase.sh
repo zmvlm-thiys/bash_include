@@ -66,4 +66,28 @@ test_multiline_test_output() {
 > line2" "${output}"
 }
 
+test_teststage_setup() {
+	unset variable
+	testcase_begin
+	teststage_setup() {
+		testedVariable=defined
+	}
+	test_inner_test() {
+		assert that testedVariable contains defined
+	}
+	teststage_proceed
+	teststage_setup() {
+		:
+	}
+	test_inner_test() {
+		assert that testedVariable contains ''
+	}
+	testcase_end
+}
+
+test_testcase_end_returns_not_0_after_256_failing_tests() {
+	testcase_begin
+	_test_failedCount=256
+	! testcase_end
+}
 testcase_end "$@"

@@ -10,6 +10,24 @@ SCRIPT_API="0"
 testcase_begin() {
 	local IFS=$'\n'
 	_test_unsetTestFunctions
+	_test_resetTestCaseVariables
+}
+
+testcase_end() {
+	_test_runTestFunctions
+	(( ! _test_failedCount ))
+}
+
+_test_unsetTestFunctions() {
+	local IFS=$'\n'
+	for line in $(declare -p -F); do
+		local function="${line#declare -f }"
+		test "test_" == "${function::5}" || continue
+		unset -f $function
+	done
+}
+
+_test_resetTestCaseVariables() {
 	unset ${!_test_*}
 	_test_RED=$'\033[31m'
 	_test_GREEN=$'\033[32m'
@@ -22,20 +40,6 @@ testcase_begin() {
 	_test_passedCount=0
 	_test_skippedCount=0
 	_test_runCount=0
-}
-
-testcase_end() {
-	_test_runTestFunctions
-	return $_test_failedCount
-}
-
-_test_unsetTestFunctions() {
-	local IFS=$'\n'
-	for line in $(declare -p -F); do
-		local function="${line#declare -f }"
-		test "test_" == "${function::5}" || continue
-		unset -f $function
-	done
 }
 
 _test_runTestFunctions() {
@@ -57,7 +61,7 @@ _test_runTestFunctions() {
 
 _test_runTest() {
 	local _test_output _test_result _test_status
-	_test_output="$(2>&1 "$@")"
+	_test_output="$(teststage_setup; 2>&1 "$@")"
 	_test_result=$?
 	if [ $_test_result == 0 ]; then
 		_test_status="${_test_PASSED}"
@@ -88,6 +92,10 @@ teststage_proceed() {
 	_test_unsetTestFunctions
 }
 
+# this function is called before each test, overwrite to implement setup
+teststage_setup() {
+	:
+}
 _test_printfAndFail() {
 	 1>&2 printf "$@"
 	exit 1
