@@ -1,0 +1,125 @@
+#!/bin/bash
+#
+SCRIPT_NAME="str"
+SCRIPT_PREFIX="str"
+SCRIPT_VERSION="0.1"
+SCRIPT_DESCRIPTION="string library for bash"
+SCRIPT_PACKAGE="bash_include"
+SCRIPT_API="1"
+
+str_escape() {
+	local replacement="'\\''"
+	echo "'${1//\'/$replacement}'"
+}
+
+str_is_empty() {
+	! test ${1:+set}
+}
+str_equals() {
+	str_is_empty "${1#"$2"}"
+}
+
+str_matches() {
+	str_is_empty "${1//$2}"
+}
+
+str_contains() {
+	str_is_empty "${1//*$2*}"
+}
+
+str_begins_with() {
+	str_is_empty "${1##$2*}"
+}
+
+str_ends_with() {
+	str_is_empty "${1%%*$2}"
+}
+
+str() {
+	local expectedTokens
+	local parametersAfterBadToken
+	_str "$@"
+	local result=$?
+	if [ ${badToken+set} ]; then
+		printf "str: unexpected token: here: str %s " "${*:1:$#-${#parametersAfterBadToken}-1}"
+		printf ">>%s<<" "${*:$#-${#parametersAfterBadToken}:1}"
+		if [ ${expectedTokens[@]+set} ]; then
+			printf ', expected:'
+			printf ' `%s'\' "${expectedTokens[@]}"
+		fi
+		echo
+		result=1
+	fi
+	return $result
+}
+_str() {
+	if [ ${2+set} ]; then
+		case "$2" in
+		'') test ${1:+set} ;;
+		is) _str_do _str_is "$@" ;;
+		begins|ends) _str_do _str_with "$@" ;;
+		contains|equals|matches) _str_do _str_dequoted "$@" ;;
+		*)
+			badToken="$2"
+			parametersAfterBadToken=( "${@:3}" )
+			return 1
+		;;
+		esac
+	else
+		test ${1:+set}
+	fi
+}
+_str_do() {
+	local result_filter='0 =='
+	if [ not == "$4" ]; then
+		result_filter='0 !=';
+		set -- "${@:1:3}" "${@:5}"
+	fi
+	"$@"
+}
+_str_is() {
+	case "$3" in
+	empty) str_is_empty "$1" ;;
+	*)
+		badToken="$3"
+		expectedTokens=( empty )
+		parametersAfterBadToken=( "${@:4}" )
+		return 1
+	;;
+	esac
+	_str_connector "$1" "${@:4}"
+}
+_str_with() {
+	case "$3" in
+	with) _str_dequoted "$1" "$2_with" "${@:4}" ;;
+	*)
+		badToken="$3"
+		expectedTokens=( with )
+		parametersAfterBadToken=( "${@:4}" )
+		return 1
+	;;
+	esac
+}
+_str_dequoted() {
+	case "$3" in
+	{*}) "str_$2" "$1" "${3:1:${#3}-2}" ;;
+	*) "str_$2" "$1" "$3" ;;
+	esac
+	_str_connector "$1" "${@:4}"
+}
+_str_connector() {
+	local result=$(( ! $result_filter $? ))
+	test ${2+set} ||
+		return $result
+	case "${2,,}" in
+	or) (( result == 0 )) || _str "$1" "${@:3}";;
+	and) (( result == 0 )) && _str "$1" "${@:3}";;
+	*)
+		badToken="$2"
+		expectedTokens=( and or )
+		parametersAfterBadToken=( "${@:3}" )
+		return 1
+	;;
+	esac
+}
+
