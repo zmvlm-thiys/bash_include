@@ -1,0 +1,42 @@
+#!/bin/bash
+#
+SCRIPT_NAME="math"
+SCRIPT_PREFIX="math"
+SCRIPT_VERSION="0.1"
+SCRIPT_DESCRIPTION="math library for bash"
+SCRIPT_PACKAGE="bash_include"
+SCRIPT_API="1"
+
+math_max() {
+	local _max=$1
+	while ${2+true} false; do
+		(( _max < $2 )) && _max=$2
+		shift
+	done
+	echo $_max
+}
+
+math_is_int() (
+	shopt -s extglob
+	string="${1//X/Z}XY"
+	string="${string#[+-]}"
+	string="${string##[123456789]*([0123456789])X}"
+	string="${string##0x+([0123456789ABCDEFabcdef])X}"
+	string="${string##0[1234567]*([01234567])X}"
+
+	test 'Y' == "${string}"
+)
+
+math_is_float() (
+	shopt -s extglob
+	string="${1//X/Z}"
+	string="${string%[eE]?([-+])[123456789]*([0123456789])}XY"
+
+	string="${string#[-+]}"
+	string="${string##[123456789]*([0123456789])?(.+([0123456789]))X}"
+	string="${string##[0]?(.+([0123456789]))X}"
+	string="${string##.+([0123456789])X}"
+
+	test 'Y' == "${string}"
+)
+

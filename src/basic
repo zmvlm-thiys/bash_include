@@ -62,7 +62,7 @@ module_end()
 	# is not included?
 	if [ "${BASH_INCLUDE_INCLUDING}" != "true" ]; then
 		# execute given commanline.
-		eval "${@}"
+		"${@}"
 		return
 	fi
 	

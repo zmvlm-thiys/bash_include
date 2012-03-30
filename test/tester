@@ -1,0 +1,28 @@
+#!/bin/bash
+#
+SRCDIR="${PWD}/../src"
+BASH_INCLUDE_PATH="${SRCDIR}"
+PATH="${SRCDIR}:${PATH:-/bin:/usr/bin:/usr/local/bin}"
+if ! [ -r ${SRCDIR}/bash_include ]; then
+	printf 'please run `configure && make'\'' before running tests\n'
+	exit 1;
+fi
+
+if (( $# == 0 )); then
+	printf 'usage: tester <testcase-script>\n'
+	exit 1;
+fi
+
+source bash_include
+include test
+
+source "$@"
+printf '========\n'
+printf 'summary: %s run, %s passed, %s failed\n' "$_test_runCount" "$_test_passedCount" "$_test_failedCount"
+if (( $_test_failedCount )); then
+	_test_status="${_test_FAILED}"
+else
+	_test_status="${_test_PASSED}"
+fi
+printf 'status: %s.\n' "$_test_status"
+exit $_test_failedCount
